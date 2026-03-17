@@ -1,5 +1,5 @@
 # ntfy-for-OpenIPC
-### Ntfy notification integration for OpenIPC cameras (Script + Web UI) / Интеграция уведомлений Ntfy для камер OpenIPC (скрипт + веб-интерфейс)
+### Интеграция уведомлений Ntfy для камер OpenIPC (скрипт + веб-интерфейс)
 
 #### ! Создано при помощи GLM-5 от Z.ai на основании скрипта telegram OpenIPC<br>(в коде сохранены комментарии ИИ)
 
