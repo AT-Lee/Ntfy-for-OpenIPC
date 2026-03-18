@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# === ЗАГРУЗКА КОНФИГУРАЦИИ ===
+# === LOADING CONFIGURATION ===
 CONFIG_FILE="/etc/webui/ntfy.conf"
 if [ -e "$CONFIG_FILE" ]; then
     source "$CONFIG_FILE"
@@ -9,7 +9,7 @@ else
     exit 1
 fi
 
-# === ПРОВЕРКИ ===
+# === CHECKS ===
 if [ "$ntfy_enabled" != "true" ]; then
     echo "Sending to Ntfy is not enabled"
     exit 0
@@ -20,21 +20,21 @@ if [ -z "$ntfy_topic" ]; then
     exit 1
 fi
 
-# Значения по умолчанию
+# Default values
 [ -z "$ntfy_server" ] && ntfy_server="https://ntfy.sh"
 [ -z "$ntfy_priority" ] && ntfy_priority="3"
 
-# Формирование текста сообщения
+# Formation of the message text
 if [ -z "$ntfy_caption" ]; then
     ntfy_message="$(hostname -s), $(date +'%F %T')"
 else
     ntfy_message="$(echo "$ntfy_caption" | sed "s/%hostname/$(hostname -s)/;s/%datetime/$(date +"%F %T")/;s/%soctemp/$(ipcinfo --temp)/")"
 fi
 
-# === СОЗДАНИЕ СНИМКА ===
+# === SNAPSHOT CREATION ===
 filename="$(hostname -s | tr ' ' '-')"-"$(date +'%Y%m%d-%H%M%S')"
 
-# Проверка формата (HEIF или JPG)
+# Format verification (HEIF or JPG)
 if [ "$ntfy_heif" = "true" ] && [ "$(yaml-cli -g .video0.codec)" = "h265" ]; then
     snapshot=/tmp/${filename}.heif
     wget -q -T1 localhost/image.heif -O "$snapshot"
@@ -48,7 +48,7 @@ if [ ! -e "$snapshot" ]; then
     exit 1
 fi
 
-# === НАСТРОЙКА ПРОКСИ (Берет из стандартного конфига OpenIPC) ===
+# === PROXY CONFIGURATION (Takes from the standard OpenIPC config) ===
 PROXY_OPTS=""
 if [ -e "/etc/webui/proxy.conf" ]; then
     source /etc/webui/proxy.conf
@@ -60,38 +60,38 @@ if [ -e "/etc/webui/proxy.conf" ]; then
     fi
 fi
 
-# === ОТПРАВКА В NTFY ===
+# === SENDING TO NTFY ===
 command="curl -s"
 command="${command} --connect-timeout 100"
 command="${command} --max-time 100"
 
-# Добавляем прокси, если есть
+# Add a proxy, if available
 if [ -n "$PROXY_OPTS" ]; then
     command="${command} ${PROXY_OPTS}"
 fi
 
-# Заголовки
+# Headlines
 command="${command} -H 'Title: Motion Detected'"
 command="${command} -H 'Priority: ${ntfy_priority}'"
 command="${command} -H 'Tags: warning,rotating_light'"
 command="${command} -H 'Message: ${ntfy_message}'"
 command="${command} -H 'Filename: $(basename $snapshot)'"
 
-# Отправка файла
+# Sending a file
 command="${command} -T '${snapshot}'"
 command="${command} '${ntfy_server}/${ntfy_topic}'"
 
-# Логин и пароль
+# Login and password
 if [ -n "$ntfy_user" ]; then
     command="${command} -u ${ntfy_user}:${ntfy_pass}"
 fi
 
 
-# Выполняем
+# Execution
 echo "$command"
 eval "$command"
 
-# Удаляем временный файл
+# Delete the temporary file
 rm -f "$snapshot"
 
 exit 0
