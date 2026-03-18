@@ -3,16 +3,16 @@
 <%
 page_title="Ntfy Notifications"
 config_file=/etc/webui/ntfy.conf
-# Список параметров, которые мы будем сохранять
+# The list of parameters that we will save
 params="enabled server topic user pass caption heif priority"
 
-# === ЛОГИКА ТЕСТОВОЙ ОТПРАВКИ ===
+# === TEST DISPATCH LOGIC ===
 if [ "$GET_send" = "test" ]; then
     echo "Content-type: text/html; charset=UTF-8"
     echo
-    # Запускаем скрипт отправки.
-    # Вывод перенаправляем в /dev/null, чтобы не засорять ответ.
-    # Проверяем код возврата (exit code). 0 = успех.
+    # Run the sending script.
+    # Redirect the output to /dev/null so as not to clog up the response.
+    # Check the return code (exit code). 0 = success.
     if /usr/sbin/ntfy > /dev/null 2>&1; then
         echo "OK"
     else
@@ -21,19 +21,19 @@ if [ "$GET_send" = "test" ]; then
     exit 0
 fi
 
-# === ЛОГИКА СОХРАНЕНИЯ НАСТРОЕК ===
+# === LOGIC OF SAVING SETTINGS ===
 if [ "$REQUEST_METHOD" = "POST" ]; then
     for p in $params; do
         eval ntfy_${p}=\$POST_ntfy_${p}
     done
 
-    # Валидация
+    # Validation
     if [ "$ntfy_enabled" = "true" ]; then
         [ -z "$ntfy_server" ] && set_error_flag "Server URL cannot be empty."
         [ -z "$ntfy_topic" ] && set_error_flag "Topic cannot be empty."
     fi
 
-    # Запись в файл
+    # Writing to a file
     if [ -z "$error" ]; then
         rm -f "$config_file"
         for p in $params; do
@@ -45,17 +45,17 @@ if [ "$REQUEST_METHOD" = "POST" ]; then
     redirect_to "$SCRIPT_NAME"
 fi
 
-# === ЗАГРУЗКА ТЕКУЩИХ НАСТРОЕК ===
+# === LOADING CURRENT SETTINGS ===
 [ -e "$config_file" ] && include $config_file
 
-# Значения по умолчанию
+# Default values
 [ -z "$ntfy_server" ] && ntfy_server="https://ntfy.sh"
 [ -z "$ntfy_priority" ] && ntfy_priority="4"
 %>
 
 <%in p/header.cgi %>
 
-    <!-- Блок с кнопкой и статусом -->
+    <!-- A block with a button and a status -->
     <div class="alert alert-info">
         <button type="button" class="btn btn-primary btn-sm" onclick="sendTestNtfy()">Send Test Notification</button>
         <span id="ntfy-status" style="margin-left: 15px; font-weight: bold;"></span>
@@ -90,7 +90,7 @@ fi
 </form>
 
 <script>
-// Функция для отправки тестового уведомления через AJAX
+// Function for sending a test notification via AJAX
 function sendTestNtfy() {
     var statusSpan = document.getElementById('ntfy-status');
     statusSpan.innerText = 'Sending...';
@@ -99,7 +99,7 @@ function sendTestNtfy() {
     fetch('?send=test')
         .then(response => response.text())
         .then(data => {
-            // data содержит ответ от сервера ("OK" или "FAIL")
+            // data contains the response from the server ("OK" or "FAIL")
             if (data.trim() === 'OK') {
                 statusSpan.innerText = 'Success: Test notification sent!';
                 statusSpan.style.color = 'green';
@@ -114,7 +114,7 @@ function sendTestNtfy() {
         });
 }
 
-// Логика для отключения HEIF, если кодек не h265
+// Logic for disabling HEIF if the codec is not h265
 <% if [ "$(yaml-cli -g .video0.codec)" != "h265" ]; then %>
     $('#ntfy_heif').checked = false;
     $('#ntfy_heif').disabled = true;
